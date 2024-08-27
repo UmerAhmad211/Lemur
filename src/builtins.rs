@@ -1,5 +1,5 @@
 use crate::Comms;
-use std::{error::Error, process::exit};
+use std::{error::Error, fs::OpenOptions, io::Write, process::exit};
 
 enum Builtin_comms {
     Cd,
@@ -33,56 +33,76 @@ impl Builtin_comms {
 
 pub fn comms_process(comms: &Comms) {
     match Builtin_comms::check_builtin_comms(&comms.key_word) {
-        Ok(Builtin_comms::Cd) => cd_builtin(&comms.args),
-        Ok(Builtin_comms::Echo) => echo_builtin(&comms.args),
-        Ok(Builtin_comms::Pwd) => pwd_builtin(&comms.args),
-        Ok(Builtin_comms::Exit) => exit_builtin(&comms.args),
-        Ok(Builtin_comms::History) => history_builtin(&comms.args),
-        Ok(Builtin_comms::Export) => export_builtin(&comms.args),
-        Ok(Builtin_comms::Unset) => unset_builtin(&comms.args),
-        Ok(Builtin_comms::Alias) => alias_builtin(&comms.args),
-        Ok(Builtin_comms::Unalias) => unalias_builtin(&comms.args),
+        Ok(Builtin_comms::Cd) => cd_builtin(&comms),
+        Ok(Builtin_comms::Echo) => echo_builtin(&comms),
+        Ok(Builtin_comms::Pwd) => pwd_builtin(&comms),
+        Ok(Builtin_comms::Exit) => exit_builtin(&comms),
+        Ok(Builtin_comms::History) => history_builtin(&comms),
+        Ok(Builtin_comms::Export) => export_builtin(&comms),
+        Ok(Builtin_comms::Unset) => unset_builtin(&comms),
+        Ok(Builtin_comms::Alias) => alias_builtin(&comms),
+        Ok(Builtin_comms::Unalias) => unalias_builtin(&comms),
         Err(e) => eprintln!("Error: {}", e),
     }
 }
 
-fn cd_builtin(args: &Vec<String>) {
+fn cd_builtin(comms: &Comms) {
     println!("Command not implemented.");
 }
 
-fn echo_builtin(args: &Vec<String>) {
-    println!("{}", args.join(" "));
+fn echo_builtin(comms: &Comms) {
+    let _rtrn = store_history(&comms);
+    println!("{}", comms.args.join(" "));
 }
 
-fn pwd_builtin(args: &Vec<String>) {
+fn pwd_builtin(comms: &Comms) {
     println!("Command not implemented.");
 }
 
-fn exit_builtin(args: &Vec<String>) {
-    if args.len() == 0 {
+fn exit_builtin(comms: &Comms) {
+    let _rtrn = store_history(&comms);
+    if comms.args.len() == 0 {
         exit(0);
-    } else if args[0] == "0" {
+    } else if comms.args[0] == "0" {
         exit(0);
     }
     exit(1);
 }
 
-fn history_builtin(args: &Vec<String>) {
+fn history_builtin(comms: &Comms) {
     println!("Command not implemented.");
 }
 
-fn export_builtin(args: &Vec<String>) {
+fn export_builtin(comms: &Comms) {
     println!("Command not implemented.");
 }
 
-fn unset_builtin(args: &Vec<String>) {
+fn unset_builtin(comms: &Comms) {
     println!("Command not implemented.");
 }
 
-fn alias_builtin(args: &Vec<String>) {
+fn alias_builtin(comms: &Comms) {
     println!("Command not implemented.");
 }
 
-fn unalias_builtin(args: &Vec<String>) {
+fn unalias_builtin(comms: &Comms) {
     println!("Command not implemented.");
+}
+
+fn store_history(comms: &Comms) -> Result<(), Box<dyn Error>> {
+    let mut history_add = OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open("history.txt")?;
+
+    let mut origin_input = comms.key_word.clone();
+    origin_input.push_str(" ");
+
+    for i in &comms.args {
+        origin_input.push_str(i);
+        origin_input.push_str(" ");
+    }
+    writeln!(history_add, "{\n}", origin_input)?;
+
+    Ok(())
 }
