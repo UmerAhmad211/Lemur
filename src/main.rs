@@ -11,8 +11,5 @@ fn main() {
         stdin().read_line(&mut input).unwrap();
         let user_comms = Comms::tokenize(input);
         builtins::comms_process(&user_comms);
-        //  Comms::exits_valid(&user_comms.key_word, &user_comms.args);
-        //println!("{:?}", user_comms.key_word);
-        //println!("{:?}", user_comms.args);
     }
 }
