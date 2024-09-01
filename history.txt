@@ -1,1 +1,8 @@
 
+echo umer 
+exit 
+exit 
+echo umer is dumb 
+exit 
+echo hi 
+exit 0 
