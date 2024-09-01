@@ -1,5 +1,11 @@
 use crate::Comms;
-use std::{error::Error, fs::OpenOptions, io::Write, process::exit};
+use std::{
+    env,
+    error::Error,
+    fs::OpenOptions,
+    io::{stdout, Write},
+    process::exit,
+};
 
 enum Builtin_comms {
     Cd,
@@ -29,6 +35,15 @@ impl Builtin_comms {
             _ => Err("Command not found."),
         }
     }
+}
+
+pub fn shell_prompt() -> Result<(), Box<dyn Error>> {
+    let path = env::current_dir()?;
+    println!("{}", path.display());
+    println!("|");
+    print!("--> ");
+    stdout().flush().unwrap();
+    Ok(())
 }
 
 pub fn comms_process(comms: &Comms) {
