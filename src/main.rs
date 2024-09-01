@@ -1,12 +1,14 @@
-use std::io::{stdin, stdout, Write};
+use std::io::stdin;
 mod builtins;
 mod parser;
 use parser::Comms;
-
-fn main() {
+use std::error::Error;
+fn main() -> Result<(), Box<dyn Error>> {
+    //let path = env::current_dir()?;
     loop {
-        print!(">");
-        stdout().flush().unwrap();
+        // print!("{} $ ", path.display());
+        // stdout().flush().unwrap();
+        builtins::shell_prompt();
         let mut input = String::new();
         stdin().read_line(&mut input).unwrap();
         let user_comms = Comms::tokenize(input);
