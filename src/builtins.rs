@@ -1,7 +1,9 @@
 use crate::Comms;
+use dirs;
 use std::{
     env,
     error::Error,
+    fs,
     fs::OpenOptions,
     io::{stdout, Write},
     process::exit,
@@ -16,8 +18,9 @@ enum Builtin_comms {
     Export,  //sets env vars
     Unset,   //opposite of export
     Alias,   //sets an alias for a process e.g:alias vim=nvim
-    Unalias, //oppposite of alias
-             //more to be added
+    Unalias, //oppposite of alias_builtin
+    Mkdir,
+    Touch, //more to be added
 }
 
 impl Builtin_comms {
@@ -32,15 +35,18 @@ impl Builtin_comms {
             "unset" => Ok(Builtin_comms::Unset),
             "alias" => Ok(Builtin_comms::Alias),
             "unalias" => Ok(Builtin_comms::Unalias),
+            "mkdir" => Ok(Builtin_comms::Mkdir),
+            "touch" => Ok(Builtin_comms::Touch),
             _ => Err("Command not found."),
         }
     }
 }
 
 pub fn shell_prompt() -> Result<(), Box<dyn Error>> {
-    let path = env::current_dir()?;
-    println!("{}", path.display());
-    println!("|");
+    match dirs::home_dir() {
+        Some(path) => println!("{}", path.display()),
+        None => println!("Home directory could not be determined"),
+    }
     print!("--> ");
     stdout().flush().unwrap();
     Ok(())
@@ -57,8 +63,27 @@ pub fn comms_process(comms: &Comms) {
         Ok(Builtin_comms::Unset) => unset_builtin(&comms),
         Ok(Builtin_comms::Alias) => alias_builtin(&comms),
         Ok(Builtin_comms::Unalias) => unalias_builtin(&comms),
+        Ok(Builtin_comms::Mkdir) => mkdir_builtin(&comms),
+        Ok(Builtin_comms::Touch) => touch_builtin(&comms),
         Err(e) => eprintln!("Error: {}", e),
     }
+}
+
+fn touch_builtin(comms: &Comms) {
+    println!("Command not implemented.");
+}
+
+fn mkdir_builtin(comms: &Comms) {
+    let hme_dir = match ::dirs::home_dir() {
+        Some(path) => path,
+        None => {
+            eprintln!("Dir does not exist.");
+            return;
+        }
+    };
+    let _ = store_history(&comms);
+    let dir_open = hme_dir.join(comms.args.join(" "));
+    let _ = fs::create_dir(dir_open);
 }
 
 fn cd_builtin(comms: &Comms) {
