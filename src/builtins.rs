@@ -17,8 +17,6 @@ enum Builtin_comms {
     History, //shows history
     Export,  //sets env vars
     Unset,   //opposite of export
-    Alias,   //sets an alias for a process e.g:alias vim=nvim
-    Unalias, //oppposite of alias_builtin
     Mkdir,
     Touch, //more to be added
 }
@@ -33,8 +31,6 @@ impl Builtin_comms {
             "history" => Ok(Builtin_comms::History),
             "export" => Ok(Builtin_comms::Export),
             "unset" => Ok(Builtin_comms::Unset),
-            "alias" => Ok(Builtin_comms::Alias),
-            "unalias" => Ok(Builtin_comms::Unalias),
             "mkdir" => Ok(Builtin_comms::Mkdir),
             "touch" => Ok(Builtin_comms::Touch),
             _ => Err("Command not found."),
@@ -61,8 +57,6 @@ pub fn comms_process(comms: &Comms) {
         Ok(Builtin_comms::History) => history_builtin(&comms),
         Ok(Builtin_comms::Export) => export_builtin(&comms),
         Ok(Builtin_comms::Unset) => unset_builtin(&comms),
-        Ok(Builtin_comms::Alias) => alias_builtin(&comms),
-        Ok(Builtin_comms::Unalias) => unalias_builtin(&comms),
         Ok(Builtin_comms::Mkdir) => mkdir_builtin(&comms),
         Ok(Builtin_comms::Touch) => touch_builtin(&comms),
         Err(e) => eprintln!("Error: {}", e),
@@ -74,6 +68,10 @@ fn touch_builtin(comms: &Comms) {
 }
 
 fn mkdir_builtin(comms: &Comms) {
+    if comms.args.len() < 1 {
+        eprintln!("Give appropriate path.");
+        return;
+    }
     let hme_dir = match ::dirs::home_dir() {
         Some(path) => path,
         None => {
@@ -82,8 +80,13 @@ fn mkdir_builtin(comms: &Comms) {
         }
     };
     let _ = store_history(&comms);
-    let dir_open = hme_dir.join(comms.args.join(" "));
-    let _ = fs::create_dir(dir_open);
+    let args = comms.args.join("/");
+    let dir_path = hme_dir.join(args);
+    println!("dir si: {}", dir_path.display());
+    match fs::create_dir_all(&dir_path) {
+        Ok(_) => println!("Dir created at {}", dir_path.display()),
+        Err(e) => println!("Failed to create dir: {}", e),
+    }
 }
 
 fn cd_builtin(comms: &Comms) {
@@ -118,14 +121,6 @@ fn export_builtin(comms: &Comms) {
 }
 
 fn unset_builtin(comms: &Comms) {
-    println!("Command not implemented.");
-}
-
-fn alias_builtin(comms: &Comms) {
-    println!("Command not implemented.");
-}
-
-fn unalias_builtin(comms: &Comms) {
     println!("Command not implemented.");
 }
 
