@@ -69,23 +69,22 @@ fn touch_builtin(comms: &Comms) {
 
 fn mkdir_builtin(comms: &Comms) {
     if comms.args.len() < 1 {
-        eprintln!("Give appropriate path.");
+        eprintln!("mkdir should have a path, i.e.: mkdir example will create a directory in home/user.\nmkdir folder_name/example will create a directory home/user_name/folder_name/example.");
         return;
     }
     let hme_dir = match ::dirs::home_dir() {
         Some(path) => path,
         None => {
-            eprintln!("Dir does not exist.");
+            eprintln!("Directory does not exist.");
             return;
         }
     };
     let _ = store_history(&comms);
     let args = comms.args.join("/");
     let dir_path = hme_dir.join(args);
-    println!("dir si: {}", dir_path.display());
     match fs::create_dir_all(&dir_path) {
-        Ok(_) => println!("Dir created at {}", dir_path.display()),
-        Err(e) => println!("Failed to create dir: {}", e),
+        Ok(_) => println!("Directory created at: {}", dir_path.display()),
+        Err(e) => println!("Error: {}", e),
     }
 }
 
