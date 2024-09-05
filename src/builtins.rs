@@ -1,7 +1,6 @@
 use crate::Comms;
 use dirs;
 use std::{
-    env,
     error::Error,
     fs,
     fs::OpenOptions,
@@ -18,7 +17,10 @@ enum Builtin_comms {
     Export,  //sets env vars
     Unset,   //opposite of export
     Mkdir,
-    Touch, //more to be added
+    Touch,
+    //Cat
+    //Lemurfetch //like fastfetch or catnap
+    ////more to be added
 }
 
 impl Builtin_comms {
@@ -38,14 +40,13 @@ impl Builtin_comms {
     }
 }
 
-pub fn shell_prompt() -> Result<(), Box<dyn Error>> {
+pub fn shell_prompt() {
     match dirs::home_dir() {
         Some(path) => println!("{}", path.display()),
         None => println!("Home directory could not be determined"),
     }
     print!("--> ");
     stdout().flush().unwrap();
-    Ok(())
 }
 
 pub fn comms_process(comms: &Comms) {
@@ -68,7 +69,7 @@ fn touch_builtin(comms: &Comms) {
 }
 
 fn mkdir_builtin(comms: &Comms) {
-    if comms.args.len() < 1 {
+    if comms.args.len() == 0 {
         eprintln!("mkdir should have a path, i.e.: mkdir example will create a directory in home/user.\nmkdir folder_name/example will create a directory home/user_name/folder_name/example.");
         return;
     }
@@ -84,7 +85,7 @@ fn mkdir_builtin(comms: &Comms) {
     let dir_path = hme_dir.join(args);
     match fs::create_dir_all(&dir_path) {
         Ok(_) => println!("Directory created at: {}", dir_path.display()),
-        Err(e) => println!("Error: {}", e),
+        Err(e) => eprintln!("Error: {}", e),
     }
 }
 
