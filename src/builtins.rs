@@ -18,6 +18,7 @@ enum Builtin_comms {
     Unset,   //opposite of export
     Mkdir,
     Touch,
+    Clear,
     //Cat
     //Lemurfetch //like fastfetch or catnap
     ////more to be added
@@ -35,6 +36,7 @@ impl Builtin_comms {
             "unset" => Ok(Builtin_comms::Unset),
             "mkdir" => Ok(Builtin_comms::Mkdir),
             "touch" => Ok(Builtin_comms::Touch),
+            "clear" => Ok(Builtin_comms::Clear),
             _ => Err("Command not found."),
         }
     }
@@ -60,6 +62,7 @@ pub fn comms_process(comms: &Comms) {
         Ok(Builtin_comms::Unset) => unset_builtin(&comms),
         Ok(Builtin_comms::Mkdir) => mkdir_builtin(&comms),
         Ok(Builtin_comms::Touch) => touch_builtin(&comms),
+        Ok(Builtin_comms::Clear) => clear_builtin(&comms),
         Err(e) => eprintln!("Error: {}", e),
     }
 }
@@ -68,9 +71,14 @@ fn touch_builtin(comms: &Comms) {
     println!("Command not implemented.");
 }
 
+fn clear_builtin(comms: &Comms) {
+    println!("Command not implemented.");
+}
+
 fn mkdir_builtin(comms: &Comms) {
     if comms.args.len() == 0 {
-        eprintln!("mkdir should have a path, i.e.: mkdir example will create a directory in home/user.\nmkdir folder_name/example will create a directory home/user_name/folder_name/example.");
+        eprintln!("mkdir should have a path, i.e.: mkdir example will create a directory in home/user.
+            \nmkdir folder_name/example will create a directory home/user_name/folder_name/example.");
         return;
     }
     let hme_dir = match ::dirs::home_dir() {
