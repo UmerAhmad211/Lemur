@@ -6,8 +6,8 @@ A small shell written in rust.
 
 ``` 
 	git clone https://github.com/UmerAhmad211/Lemur.git
-	cd Lemur
-    cargo run --release
+    	cd Lemur
+	cargo run --release
 ```
 
 ![image](https://github.com/user-attachments/assets/711da106-1670-4d54-a59a-b38885d3612b)
