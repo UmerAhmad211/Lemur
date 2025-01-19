@@ -236,34 +236,32 @@ fn lemf_builtin(comms: &Comms) {
         println!("{}", lemur);
         let memory = sys_info.total_memory() / (1024 * 1024 * 1024);
         println!(
-            "\x1b[32mTotal memory: \x1b[0m          {} \x1b[32mGiB\x1b[0m",
+            "\x1b[32mTotal memory: \x1b[0m   {} \x1b[32mGiB\x1b[0m",
             memory
         );
         let memory = sys_info.used_memory() / (1024 * 1024 * 1024);
         println!(
-            "\x1b[32mUsed memory: \x1b[0m           {} \x1b[32mGiB\x1b[0m",
+            "\x1b[32mUsed memory: \x1b[0m    {} \x1b[32mGiB\x1b[0m",
             memory
         );
         println!(
-            "\x1b[32mSystem name: \x1b[0m           {}",
+            "\x1b[32mSystem name: \x1b[0m    {}",
             option_string_to_string(&System::name())
         );
         println!(
-            "\x1b[32mSystem kernel version: \x1b[0m {}",
+            "\x1b[32mKernel version: \x1b[0m {}",
             option_string_to_string(&System::kernel_version())
         );
         println!(
-            "\x1b[32mSystem OS version: \x1b[0m     {}",
+            "\x1b[32mOS version: \x1b[0m     {}",
             option_string_to_string(&System::os_version())
         );
         println!(
-            "\x1b[32mSystem host name: \x1b[0m      {}",
+            "\x1b[32mHost name: \x1b[0m      {}",
             option_string_to_string(&System::host_name())
         );
-        println!(
-            "\x1b[32mNumber of CPUs: \x1b[0m        {}",
-            sys_info.cpus().len()
-        );
+        println!("\x1b[32mNumber of CPUs: \x1b[0m {}", sys_info.cpus().len());
+        println!("\x1b[32mTerminal: \x1b[0m       {}", get_term_name());
         return;
     }
     eprintln!("\x1b[31mLemur: fetch failed.\x1b[0m");
@@ -309,5 +307,12 @@ fn option_string_to_string(op_string: &Option<String>) -> String {
     match op_string {
         Some(ret_string) => ret_string.to_string(),
         None => String::from("Lemur grunts."),
+    }
+}
+
+fn get_term_name() -> String {
+    match env::var("TERM") {
+        Ok(term) => term.to_string(),
+        Err(_) => String::from("Lemur grunts."),
     }
 }
