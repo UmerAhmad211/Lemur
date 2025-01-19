@@ -21,6 +21,7 @@ enum BuiltinCommands {
     Cat,
     Ls,
     LemurFetch,
+    Help,
 }
 
 impl BuiltinCommands {
@@ -36,6 +37,7 @@ impl BuiltinCommands {
             "cat" => Ok(BuiltinCommands::Cat),
             "ls" => Ok(BuiltinCommands::Ls),
             "lemf" => Ok(BuiltinCommands::LemurFetch),
+            "help" => Ok(BuiltinCommands::Help),
             _ => Err("Command not found."),
         }
     }
@@ -58,6 +60,7 @@ pub fn comms_process(comms: &Comms, curr_dir_path: &mut String) {
         Ok(BuiltinCommands::Cat) => cat_builtin(&comms),
         Ok(BuiltinCommands::Ls) => ls_builtin(&comms),
         Ok(BuiltinCommands::LemurFetch) => lemf_builtin(&comms),
+        Ok(BuiltinCommands::Help) => help_builtin(&comms),
         Err(e) => eprintln!("\x1b[31mLemur: Error: {}\x1b[0m", e),
     }
 }
@@ -100,6 +103,7 @@ fn mkdir_builtin(comms: &Comms) {
 
 fn cd_builtin(comms: &Comms, curr_dir_path: &mut String) {
     if comms.args.len() == 1 {
+        _ = store_history(&comms);
         if comms.args[0] == ".." {
             let dir_path = Path::new(curr_dir_path);
             if let Some(parent_dir) = dir_path.parent() {
@@ -119,6 +123,7 @@ fn cd_builtin(comms: &Comms, curr_dir_path: &mut String) {
         }
         return;
     } else {
+        _ = store_history(&comms);
         let home_dir: String = match Comms::init_home_dir() {
             Ok(dir) => dir,
             Err(_) => exit(1),
@@ -160,9 +165,13 @@ fn history_builtin(comms: &Comms) {
         let history_file_name = String::from(".lemur_history");
         home_dir.push_str("/");
         home_dir.push_str(&history_file_name);
-
-        let file_contents = fs::read_to_string(home_dir).unwrap();
-        println!("{}", file_contents);
+        match fs::read_to_string(history_file_name) {
+            Ok(content) => println!("{}", content),
+            Err(_) => {
+                eprintln!("\x1b[31mLemur: Failed to show history.\x1b[0m");
+                return;
+            }
+        }
         _ = store_history(&comms);
         return;
     }
@@ -171,11 +180,17 @@ fn history_builtin(comms: &Comms) {
 
 fn cat_builtin(comms: &Comms) {
     if comms.args.len() == 1 {
-        let mut cat_dir = comms.curr_dir.clone();
-        cat_dir.push('/');
-        cat_dir.push_str(&comms.args[0]);
-        let file_contents = fs::read_to_string(cat_dir).unwrap();
-        println!("{}", file_contents);
+        let mut cat_file_name = comms.curr_dir.clone();
+        cat_file_name.push('/');
+        cat_file_name.push_str(&comms.args[0]);
+
+        match fs::read_to_string(cat_file_name) {
+            Ok(content) => println!("{}", content),
+            Err(_) => {
+                eprintln!("\x1b[31mLemur: Failed to show file content.\x1b[0m");
+                return;
+            }
+        }
         _ = store_history(&comms);
         return;
     }
@@ -184,6 +199,7 @@ fn cat_builtin(comms: &Comms) {
 
 fn ls_builtin(comms: &Comms) {
     if comms.args.is_empty() {
+        _ = store_history(&comms);
         match fs::read_dir(&comms.curr_dir) {
             Ok(entries) => {
                 for entry in entries {
@@ -262,9 +278,33 @@ fn lemf_builtin(comms: &Comms) {
         );
         println!("\x1b[32mNumber of CPUs: \x1b[0m {}", sys_info.cpus().len());
         println!("\x1b[32mTerminal: \x1b[0m       {}", get_term_name());
+        println!("\x1b[32mDE/WM: \x1b[0m          {}", get_desktop_name());
+        _ = store_history(&comms);
         return;
     }
     eprintln!("\x1b[31mLemur: fetch failed.\x1b[0m");
+}
+
+fn help_builtin(comms: &Comms) {
+    if comms.args.is_empty() {
+        let help = r#"
+        cd <dir_name>, cd .. to go to parent directory, cd to go to home directory
+        exit
+        pwd 
+        history (shows history which is stored in a file .lemur_history in the home directory)
+        mkdir <dir_name>
+        touch <file_name>
+        clear 
+        cat <file_name>
+        ls
+        lemf
+        help
+       "#;
+        println!("{}", help);
+        _ = store_history(&comms);
+        return;
+    }
+    eprintln!("\x1b[31mLemur: help failed.\x1b[0m");
 }
 
 fn store_history(comms: &Comms) -> Result<(), Box<dyn Error>> {
@@ -313,6 +353,13 @@ fn option_string_to_string(op_string: &Option<String>) -> String {
 fn get_term_name() -> String {
     match env::var("TERM") {
         Ok(term) => term.to_string(),
+        Err(_) => String::from("Lemur grunts."),
+    }
+}
+
+fn get_desktop_name() -> String {
+    match env::var("DESKTOP_SESSION") {
+        Ok(desk_name) => desk_name.to_string(),
         Err(_) => String::from("Lemur grunts."),
     }
 }
