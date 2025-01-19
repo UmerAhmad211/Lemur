@@ -11,3 +11,4 @@ codegen-units = 1
 panic = "abort"
 
 [dependencies]
+sysinfo = "0.33.1"
