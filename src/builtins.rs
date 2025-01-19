@@ -5,8 +5,10 @@ use std::{
     ffi::OsStr,
     fs::{self, File, OpenOptions},
     io::{stdout, Write},
+    path::Path,
     process::exit,
 };
+use sysinfo::System;
 
 enum BuiltinCommands {
     Cd,
@@ -18,6 +20,7 @@ enum BuiltinCommands {
     Clear,
     Cat,
     Ls,
+    LemurFetch,
 }
 
 impl BuiltinCommands {
@@ -32,6 +35,7 @@ impl BuiltinCommands {
             "clear" => Ok(BuiltinCommands::Clear),
             "cat" => Ok(BuiltinCommands::Cat),
             "ls" => Ok(BuiltinCommands::Ls),
+            "lemf" => Ok(BuiltinCommands::LemurFetch),
             _ => Err("Command not found."),
         }
     }
@@ -53,7 +57,8 @@ pub fn comms_process(comms: &Comms, curr_dir_path: &mut String) {
         Ok(BuiltinCommands::Clear) => clear_builtin(&comms),
         Ok(BuiltinCommands::Cat) => cat_builtin(&comms),
         Ok(BuiltinCommands::Ls) => ls_builtin(&comms),
-        Err(e) => eprintln!("\x1b[31mError: {}\x1b[0m", e),
+        Ok(BuiltinCommands::LemurFetch) => lemf_builtin(&comms),
+        Err(e) => eprintln!("\x1b[31mLemur: Error: {}\x1b[0m", e),
     }
 }
 
@@ -64,12 +69,12 @@ fn touch_builtin(comms: &Comms) {
         touch_file_path.push_str(&comms.args[0]);
         match File::create(&touch_file_path) {
             Ok(_) => {}
-            Err(_) => eprintln!("\x1b[31mFailed to create file.\x1b[0m"),
+            Err(_) => eprintln!("\x1b[31mLemur: Failed to create file.\x1b[0m"),
         }
         _ = store_history(&comms);
         return;
     }
-    eprintln!("\x1b[31mtouch failed.\x1b[0m");
+    eprintln!("\x1b[31mLemur: touch failed.\x1b[0m");
 }
 
 fn clear_builtin(comms: &Comms) {
@@ -90,23 +95,39 @@ fn mkdir_builtin(comms: &Comms) {
         _ = store_history(&comms);
         return;
     }
-    eprintln!("\x1b[31mFailed to create DIR.\x1b[0m");
+    eprintln!("\x1b[31mLemur: Failed to create DIR.\x1b[0m");
 }
 
 fn cd_builtin(comms: &Comms, curr_dir_path: &mut String) {
     if comms.args.len() == 1 {
-        let mut cd_dir = comms.curr_dir.clone();
-        cd_dir.push('/');
-        cd_dir.push_str(&comms.args[0]);
-        match env::set_current_dir(&cd_dir) {
-            Ok(_) => *curr_dir_path = cd_dir.clone(),
-            Err(_) => {
-                eprintln!("\x1b[31mNot a DIR.\x1b[0m");
+        if comms.args[0] == ".." {
+            let dir_path = Path::new(curr_dir_path);
+            if let Some(parent_dir) = dir_path.parent() {
+                match env::set_current_dir(parent_dir) {
+                    Ok(_) => *curr_dir_path = parent_dir.to_string_lossy().to_string(),
+                    Err(_) => eprintln!("\x1b[31mLemur: Not a DIR.\x1b[0m"),
+                }
+            }
+        } else {
+            let mut cd_dir = comms.curr_dir.clone();
+            cd_dir.push('/');
+            cd_dir.push_str(&comms.args[0]);
+            match env::set_current_dir(&cd_dir) {
+                Ok(_) => *curr_dir_path = cd_dir.clone(),
+                Err(_) => eprintln!("\x1b[31mLemur: Not a DIR.\x1b[0m"),
             }
         }
         return;
+    } else {
+        let home_dir: String = match Comms::init_home_dir() {
+            Ok(dir) => dir,
+            Err(_) => exit(1),
+        };
+        match env::set_current_dir(&home_dir) {
+            Ok(_) => *curr_dir_path = home_dir.clone(),
+            Err(_) => eprintln!("\x1b[31mLemur: cd Error.\x1b[0m"),
+        }
     }
-    eprintln!("\x1b[31mcd failed.\x1b[0m");
 }
 
 fn pwd_builtin(comms: &Comms) {
@@ -115,7 +136,7 @@ fn pwd_builtin(comms: &Comms) {
         _ = store_history(&comms);
         return;
     }
-    eprintln!("\x1b[31mpwd failed.\x1b[0m");
+    eprintln!("\x1b[31mLemur: pwd failed.\x1b[0m");
 }
 
 fn exit_builtin(comms: &Comms) {
@@ -145,7 +166,7 @@ fn history_builtin(comms: &Comms) {
         _ = store_history(&comms);
         return;
     }
-    eprintln!("\x1b[31mFailed to show history.\x1b[0m");
+    eprintln!("\x1b[31mLemur: Failed to show history.\x1b[0m");
 }
 
 fn cat_builtin(comms: &Comms) {
@@ -158,7 +179,7 @@ fn cat_builtin(comms: &Comms) {
         _ = store_history(&comms);
         return;
     }
-    eprintln!("\x1b[31mFailed to cat.\x1b[0m");
+    eprintln!("\x1b[31mLemur: Failed to cat.\x1b[0m");
 }
 
 fn ls_builtin(comms: &Comms) {
@@ -170,7 +191,7 @@ fn ls_builtin(comms: &Comms) {
                         Ok(entry) => {
                             let path = entry.path();
                             let file_dir_name = path.file_name();
-                            let ret_val = option_to_string(&file_dir_name);
+                            let ret_val = os_str_to_string(&file_dir_name);
                             if path.is_dir() {
                                 println!("\x1b[32m{}\x1b[0m", ret_val);
                             } else if path.is_file() {
@@ -185,9 +206,67 @@ fn ls_builtin(comms: &Comms) {
                 }
             }
 
-            Err(_) => eprintln!("\x1b[31mls failed.\x1b[0m"),
+            Err(_) => eprintln!("\x1b[31mLemur: ls failed.\x1b[0m"),
         }
     }
+}
+
+fn lemf_builtin(comms: &Comms) {
+    if comms.args.is_empty() {
+        let mut sys_info = System::new_all();
+        sys_info.refresh_all();
+        let lemur = r#"                      ,,
+                      ==
+                       ==
+                         ==
+                          ==
+                    ==     ==
+                  ==  ==  ==
+                 ==     ==
+          ,  ,    ==
+          |\/|   ,-..-,
+      ,d__(..)\_/      \
+      ;-,_`o/          |
+          '-| \_,' /^| /
+            ( //  /  \ \
+            || \ <    \ )
+           _\|  \ )   _\\
+            ~`  _\|    ~`
+                 ~`"#;
+        println!("{}", lemur);
+        let memory = sys_info.total_memory() / (1024 * 1024 * 1024);
+        println!(
+            "\x1b[32mTotal memory: \x1b[0m          {} \x1b[32mGiB\x1b[0m",
+            memory
+        );
+        let memory = sys_info.used_memory() / (1024 * 1024 * 1024);
+        println!(
+            "\x1b[32mUsed memory: \x1b[0m           {} \x1b[32mGiB\x1b[0m",
+            memory
+        );
+        println!(
+            "\x1b[32mSystem name: \x1b[0m           {}",
+            option_string_to_string(&System::name())
+        );
+        println!(
+            "\x1b[32mSystem kernel version: \x1b[0m {}",
+            option_string_to_string(&System::kernel_version())
+        );
+        println!(
+            "\x1b[32mSystem OS version: \x1b[0m     {}",
+            option_string_to_string(&System::os_version())
+        );
+        println!(
+            "\x1b[32mSystem host name: \x1b[0m      {}",
+            option_string_to_string(&System::host_name())
+        );
+        println!(
+            "\x1b[32mNumber of CPUs: \x1b[0m        {}",
+            sys_info.cpus().len()
+        );
+        return;
+    }
+    eprintln!("\x1b[31mLemur: fetch failed.\x1b[0m");
 }
 
 fn store_history(comms: &Comms) -> Result<(), Box<dyn Error>> {
@@ -217,11 +296,18 @@ fn store_history(comms: &Comms) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn option_to_string(op_string: &Option<&OsStr>) -> String {
+fn os_str_to_string(op_string: &Option<&OsStr>) -> String {
     match op_string {
         Some(file_or_dir) => file_or_dir
             .to_str()
             .map_or_else(|| String::new(), |s| s.to_string()),
         None => String::new(),
+    }
+}
+
+fn option_string_to_string(op_string: &Option<String>) -> String {
+    match op_string {
+        Some(ret_string) => ret_string.to_string(),
+        None => String::from("Lemur grunts."),
     }
 }
