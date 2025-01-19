@@ -10,7 +10,7 @@ A small shell written in rust.
     cargo run --release
 ```
 
-![[Pasted image 20250119192402.png]]
+![image](https://github.com/user-attachments/assets/711da106-1670-4d54-a59a-b38885d3612b)
 
 ## Note: 
 
