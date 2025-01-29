@@ -1,6 +1,7 @@
 use std::{io::stdin, process::exit};
 mod builtins;
 mod parser;
+mod utils;
 use parser::Comms;
 use std::error::Error;
 
